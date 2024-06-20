@@ -1,7 +1,7 @@
 pipeline {   
      environment {
         GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-D.git' // Reemplaza con la URL de tu repositorio
-        STACK_NAME = 'production-todo-list-aws'     // Cambia esto al nombre de tu stack SAM
+        STACK_NAME = 'todo-list-aws-production'     // Cambia esto al nombre de tu stack SAM
     }
 
      stages {
