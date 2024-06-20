@@ -1,7 +1,7 @@
 pipeline {   
      environment {
         GIT_CREDENTIALS = 'miTokenGitHub' // Reemplaza con el ID de tus credenciales en Jenkins
-        GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-C.git' // Reemplaza con la URL de tu repositorio
+        GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-D.git' // Reemplaza con la URL de tu repositorio
         BRANCH = 'develop' // Reemplaza con la rama a la que deseas hacer push
         STACK_NAME = 'staging-todo-list-aws'     // Cambia esto al nombre de tu stack SAM
     }
