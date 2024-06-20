@@ -1,4 +1,3 @@
-Pipeline
 pipeline {   
      environment {
         GIT_CREDENTIALS = 'miTokenGitHub' // Reemplaza con el ID de tus credenciales en Jenkins
