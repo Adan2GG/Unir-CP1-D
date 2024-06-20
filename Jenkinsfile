@@ -1,17 +1,12 @@
 Pipeline
-pipeline {
-    agent any
-   
+pipeline {   
      environment {
         GIT_CREDENTIALS = 'miTokenGitHub' // Reemplaza con el ID de tus credenciales en Jenkins
         GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-C.git' // Reemplaza con la URL de tu repositorio
         BRANCH = 'develop' // Reemplaza con la rama a la que deseas hacer push
         STACK_NAME = 'staging-todo-list-aws'     // Cambia esto al nombre de tu stack SAM
     }
-   
-    options {
-        parallelsAlwaysFailFast()
-        }
+
      stages {
         stage('Get Code') {
             steps {
@@ -25,7 +20,6 @@ pipeline {
             }
         }
         stage('Static Test') {
-            parallel {
                 stage('Static') {
                     steps{
                         unstash name:'code'
@@ -53,7 +47,6 @@ pipeline {
                         }
                     }
                 }
-            }
         }
         stage ('Deploy'){
             steps{
@@ -64,6 +57,7 @@ pipeline {
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
                     def output = readJSON(text: stackInfo)
                     def apiUrl = output.Stacks[0].Outputs.find { it.OutputKey == 'BaseUrlApi' }?.OutputValue
+
                     if (apiUrl) {
                         env.BASE_URL = apiUrl // Guardar el valor en la variable de entorno
                         echo "API URL: ${env.BASE_URL}"
