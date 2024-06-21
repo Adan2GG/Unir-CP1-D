@@ -14,7 +14,7 @@ pipeline {
         stage ('Deploy'){
             steps{
                 sh 'sam build'
-                sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml'
+                sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml --config-env production'
                 //Obtenemos las urls del servicio desplegado en con sam
                 script {
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
