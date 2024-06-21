@@ -1,11 +1,16 @@
-pipeline {   
+pipeline {
+    agent any
+   
      environment {
         GIT_CREDENTIALS = 'miTokenGitHub' // Reemplaza con el ID de tus credenciales en Jenkins
         GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-D.git' // Reemplaza con la URL de tu repositorio
         BRANCH = 'develop' // Reemplaza con la rama a la que deseas hacer push
-        STACK_NAME = 'staging-todo-list-aws'     // Cambia esto al nombre de tu stack SAM
+        STACK_NAME='staging-todo-list-aws'
     }
-
+   
+    options {
+        parallelsAlwaysFailFast()
+        }
      stages {
         stage('Get Code') {
             steps {
@@ -19,6 +24,7 @@ pipeline {
             }
         }
         stage('Static Test') {
+            parallel {
                 stage('Static') {
                     steps{
                         unstash name:'code'
@@ -46,6 +52,7 @@ pipeline {
                         }
                     }
                 }
+            }
         }
         stage ('Deploy'){
             steps{
@@ -56,9 +63,8 @@ pipeline {
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
                     def output = readJSON(text: stackInfo)
                     def apiUrl = output.Stacks[0].Outputs.find { it.OutputKey == 'BaseUrlApi' }?.OutputValue
-
                     if (apiUrl) {
-                        env.BASE_URL = apiUrl // Guardar el valor en la variable de entorno
+                        env.BASE_URL = apiUrl
                         echo "API URL: ${env.BASE_URL}"
                     } else {
                         error "API URL not found in stack outputs"
@@ -67,48 +73,54 @@ pipeline {
             }
         }
         stage('Tests Rest') {
-                  steps {
-                         unstash name:'code'
-                        script {
-                              def stageName = env.STAGE_NAME
-                              echo "Stage: ${stageName}"
-                              def nodeName = env.NODE_NAME
-                              echo "Agent: ${nodeName}"
-                              }
-                               script{
-                                    sh'''
-                                          python -m pytest --junitxml=result-rest.xml test/integration/todoApiTest.py
-                                    '''
-                           }
-                        }
+                  steps {
+                         unstash name:'code'
+                        script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
+                               script{
+                                    sh'''
+                                          python -m pytest --junitxml=result-rest.xml test/integration/todoApiTest.py
+                                    '''
+                           }
+                        }
             }
-            stage('Promote') {
-                  steps{
-                        git url:"${GIT_REPOR_URL}", branch: 'develop', credentialsId:"{GIT_CREDENTIALS}"
+            stage('Promote') {
+                  steps{
+                        git url:"${env.GIT_REPOR_URL}", branch: 'develop', credentialsId:"{env.GIT_CREDENTIALS}"
                 script {
-                    echo"***Config global merge"
-                    sh git config --global merge.ours.driver true
-                        echo "***Checkout Develop Branch***"
+
+                        echo "***Checkout Develop Branch***"
                     sh 'git checkout develop'
-                    sh 'git pull origin develop'
-                        echo "***CheckOut Master***"
-                        sh 'git checkout master'
-                    sh 'git pull origin master'
-                        echo "***Merge Develop into Master***"
-                        sh 'git merge develop'
-                        echo "***Push Master***"
-                        withCredentials([string(credentialsId:"${GIT_CREDENTIALS}",variable: 'GIT_TOKEN')]){
-                    sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir-CP1-C.git master'
-                   }                  
+					sh 'git fetch origin'
+                        echo "***CheckOut Master***"
+                    sh 'git checkout master'
+                        echo "***Merge develop to master***"
+                    sh 'git merge develop || true'
+                        echo "***File to excludes***"
+                    sh 'git checkout --ours Jenkinsfile'
+                        echo "*** Add jenkinsfile***"
+                    sh 'git add Jenkinsfile'
+                        echo "***Add files***"
+                    sh 'git add .'
+						echo"***Commit the mege***"
+					sh 'git commit -m "Merge develop into master, excluding Jnekinsfile"'
+                        echo "***Push Master***"
+                        withCredentials([string(credentialsId:"${env.GIT_CREDENTIALS}",variable: 'GIT_TOKEN')]){
+                            sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir-CP1-D.git master'
+                        }                  
                 }
-                        
-                  }
-            }
-        post { 
-            always { 
+                        
+                  }
+            }
+    }
+      post {
+            always {
                 echo 'Clean env: delete dir'
                 cleanWs()
             }
         }
-    }
 }
