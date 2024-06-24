@@ -1,4 +1,5 @@
 pipeline {   
+    agent any
      environment {
         GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-D.git' // Reemplaza con la URL de tu repositorio
         STACK_NAME = 'todo-list-aws-production'     // Cambia esto al nombre de tu stack SAM
@@ -14,7 +15,7 @@ pipeline {
         stage ('Deploy'){
             steps{
                 sh 'sam build'
-                sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml --config-env production'
+                sh 'sam deploy  --config-env production --no-fail-on-empty-changeset || true --config-file samconfig.toml'
                 //Obtenemos las urls del servicio desplegado en con sam
                 script {
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
@@ -31,26 +32,20 @@ pipeline {
             }
         }
         stage('Tests Rest') {
-                  steps {
-                         unstash name:'code'
-                        script {
-                              def stageName = env.STAGE_NAME
-                              echo "Stage: ${stageName}"
-                              def nodeName = env.NODE_NAME
-                              echo "Agent: ${nodeName}"
-                              }
-                               script{
-                                    sh'''
-                                          python pytest -m category1 --junitxml=result-rest.xml test/integration/todoApiTest.py
-                                    '''
-                           }
-                        }
+                  steps {
+                         unstash name:'code'
+                        script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
+                               script{
+                                    sh'''
+                                       python -m  pytest -m category1 --junitxml=result-rest.xml test/integration/todoApiTest.py
+                                    '''
+                           }
+                        }
             }
-        post { 
-            always { 
-                echo 'Clean env: delete dir'
-                cleanWs()
-            }
-        }
     }
 }
