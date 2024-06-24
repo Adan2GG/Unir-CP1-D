@@ -8,10 +8,8 @@ pipeline {
      stages {
         stage('Get Code') {
             steps {
-<<<<<<< HEAD
                git branch: 'master', url:'https://github.com/Adan2GG/unir-CP1-D.git'
                stash name:'code' , includes:'**'
-=======
                 checkout([$class: 'GitSCM',
                           branches: [[name: "${BRANCH}"]],
                           doGenerateSubmoduleConfigurations: false,
@@ -25,7 +23,7 @@ pipeline {
             parallel {
                 stage('Static') {
                     steps{
-						agent { label 'AgentCI'}
+			agent { label 'AgentCI'}
                         unstash name:'code'
                          script {
                               def stageName = env.STAGE_NAME
@@ -46,7 +44,7 @@ pipeline {
                 }
                 stage('Security') {
                     steps {
-		     agent { label 'AgentCD'}
+		     agent { label 'AgentCI'}
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                          script {
@@ -64,12 +62,10 @@ pipeline {
                         }
                     }
                 }
->>>>>>> develop
             }
         }
         stage ('Deploy'){
             steps{
-                agent {label 'AgentCI'}
                 sh 'sam build'
                 sh 'sam deploy  --config-env production --no-fail-on-empty-changeset || true --config-file samconfig.toml'
                 //Obtenemos las urls del servicio desplegado en con sam
