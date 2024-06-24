@@ -32,6 +32,10 @@ pipeline {
                         unstash name:'code'
                         script{
                            sh'''
+			   def stageName = env.STAGE_NAME
+                           echo "Stage: ${stageName}"
+                           def nodeName = env.NODE_NAME
+                           echo "Agent: ${nodeName}"
                            set PYTHONPATH=.
                            python -m flake8 --format=pylint --extend-ignore E501 --exit-zero  src >flake8.out
                             '''
@@ -43,11 +47,15 @@ pipeline {
                 }
                 stage('Security') {
                     steps {
-					agent { label 'AgentCI'}
+		     agent { label 'AgentCI'}
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                         script{
                            sh'''
+			     def stageName = env.STAGE_NAME
+                             echo "Stage: ${stageName}"
+                             def nodeName = env.NODE_NAME
+                             echo "Agent: ${nodeName}"
                              python -m bandit -r .  --exit-zero -f custom -o bandit.out --severity-level medium --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
                         }
@@ -63,6 +71,10 @@ pipeline {
                 sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml --config-env staging'
                 //Obtenemos las urls del servicio desplegado en con sam
                 script {
+		    def stageName = env.STAGE_NAME
+                    echo "Stage: ${stageName}"
+                    def nodeName = env.NODE_NAME
+                    echo "Agent: ${nodeName}"
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
                     def output = readJSON(text: stackInfo)
                     def apiUrl = output.Stacks[0].Outputs.find { it.OutputKey == 'BaseUrlApi' }?.OutputValue
