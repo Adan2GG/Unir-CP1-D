@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
    
@@ -30,12 +29,14 @@ pipeline {
                     steps{
 						agent { label 'AgentCI'}
                         unstash name:'code'
+                         script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
                         script{
                            sh'''
-			   def stageName = env.STAGE_NAME
-                           echo "Stage: ${stageName}"
-                           def nodeName = env.NODE_NAME
-                           echo "Agent: ${nodeName}"
                            set PYTHONPATH=.
                            python -m flake8 --format=pylint --extend-ignore E501 --exit-zero  src >flake8.out
                             '''
@@ -50,12 +51,14 @@ pipeline {
 		     agent { label 'AgentCI'}
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                         script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
                         script{
                            sh'''
-			     def stageName = env.STAGE_NAME
-                             echo "Stage: ${stageName}"
-                             def nodeName = env.NODE_NAME
-                             echo "Agent: ${nodeName}"
                              python -m bandit -r .  --exit-zero -f custom -o bandit.out --severity-level medium --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
                         }
