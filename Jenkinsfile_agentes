@@ -48,7 +48,7 @@ pipeline {
                 }
                 stage('Security') {
                     steps {
-		     agent { label 'AgentCI'}
+		     agent { label 'AgentCD'}
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                          script {
