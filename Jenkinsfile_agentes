@@ -8,8 +8,63 @@ pipeline {
      stages {
         stage('Get Code') {
             steps {
+<<<<<<< HEAD
                git branch: 'master', url:'https://github.com/Adan2GG/unir-CP1-D.git'
                stash name:'code' , includes:'**'
+=======
+                checkout([$class: 'GitSCM',
+                          branches: [[name: "${BRANCH}"]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [],
+                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
+                ])
+                stash name:'code', includes:'**'
+            }
+        }
+        stage('Static Test') {
+            parallel {
+                stage('Static') {
+                    steps{
+						agent { label 'AgentCI'}
+                        unstash name:'code'
+                         script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
+                        script{
+                           sh'''
+                           set PYTHONPATH=.
+                           python -m flake8 --format=pylint --extend-ignore E501 --exit-zero  src >flake8.out
+                            '''
+                            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true],[threshold:10, type: 'TOTAL', unstable: false]]
+                            }
+                        }
+                    }
+                }
+                stage('Security') {
+                    steps {
+		     agent { label 'AgentCD'}
+                     unstash name:'code'
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                         script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
+                        script{
+                           sh'''
+                             python -m bandit -r .  --exit-zero -f custom -o bandit.out --severity-level medium --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+                            '''
+                        }
+                        recordIssues tools: [pyLint(name: 'bandit', pattern: 'bandit.out')], qualityGates: [[threshold:2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: true]]
+                        }
+                    }
+                }
+>>>>>>> develop
             }
         }
         stage ('Deploy'){
