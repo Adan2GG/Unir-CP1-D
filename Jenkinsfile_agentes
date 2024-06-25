@@ -91,7 +91,7 @@ pipeline {
             }
         }
         stage('Tests Rest') {
-		  agent { label 'AgentCD'}
+		  agent { label 'AgentCI'}
                   steps {
                         unstash name:'code'
                         script {
