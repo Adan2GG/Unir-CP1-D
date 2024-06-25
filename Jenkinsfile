@@ -14,13 +14,15 @@ pipeline {
      stages {
         stage('Get Code') {
             steps {
-                checkout([$class: 'GitSCM',
+                 checkout([$class: 'GitSCM',
                           branches: [[name: "${BRANCH}"]],
                           doGenerateSubmoduleConfigurations: false,
                           extensions: [],
                           userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
                 ])
                 stash name:'code', includes:'**'
+                git branch: 'staging', url:'https://github.com/Adan2GG/todo-list-aws-config.git'
+                stash name:'code2' , includes:'**'
             }
         }
         stage('Static Test') {
@@ -56,8 +58,9 @@ pipeline {
         }
         stage ('Deploy'){
             steps{
+                 unstash name:'code2'
                 sh 'sam build'
-                sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml --config-env staging'
+                sh 'sam deploy --config-file samconfig.toml  --config-env staging --no-fail-on-empty-changeset || true '
                 //Obtenemos las urls del servicio desplegado en con sam
                 script {
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
