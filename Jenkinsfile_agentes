@@ -1,22 +1,33 @@
-pipeline {   
+pipeline {
     agent { label 'AgenteAny'}
+   
      environment {
+        GIT_CREDENTIALS = 'miTokenGitHub' // Reemplaza con el ID de tus credenciales en Jenkins
         GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-D.git' // Reemplaza con la URL de tu repositorio
-        STACK_NAME = 'todo-list-aws-production'     // Cambia esto al nombre de tu stack SAM
+        BRANCH = 'develop' // Reemplaza con la rama a la que deseas hacer push
+        STACK_NAME='staging-todo-list-aws'
     }
-
+   
+    options {
+        parallelsAlwaysFailFast()
+        }
      stages {
         stage('Get Code') {
             steps {
-               git branch: 'master', url:'https://github.com/Adan2GG/unir-CP1-D.git'
-               stash name:'code' , includes:'**'
+                checkout([$class: 'GitSCM',
+                          branches: [[name: "${BRANCH}"]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [],
+                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
+                ])
+                stash name:'code', includes:'**'
             }
         }
         stage('Static Test') {
             parallel {
                 stage('Static') {
 		    agent { label 'AgentCI'}
-                    steps{
+                    steps{	
                         unstash name:'code'
                          script {
                               def stageName = env.STAGE_NAME
@@ -36,7 +47,7 @@ pipeline {
                     }
                 }
                 stage('Security') {
-		    agent { label 'AgentCI'}
+		    agent { label 'AgentCD'}
                     steps {
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
@@ -60,15 +71,18 @@ pipeline {
         stage ('Deploy'){
             steps{
                 sh 'sam build'
-                sh 'sam deploy  --config-env production --no-fail-on-empty-changeset || true --config-file samconfig.toml'
+                sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml --config-env staging'
                 //Obtenemos las urls del servicio desplegado en con sam
                 script {
+		    def stageName = env.STAGE_NAME
+                    echo "Stage: ${stageName}"
+                    def nodeName = env.NODE_NAME
+                    echo "Agent: ${nodeName}"
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
                     def output = readJSON(text: stackInfo)
                     def apiUrl = output.Stacks[0].Outputs.find { it.OutputKey == 'BaseUrlApi' }?.OutputValue
-
                     if (apiUrl) {
-                        env.BASE_URL = apiUrl // Guardar el valor en la variable de entorno
+                        env.BASE_URL = apiUrl
                         echo "API URL: ${env.BASE_URL}"
                     } else {
                         error "API URL not found in stack outputs"
@@ -77,9 +91,9 @@ pipeline {
             }
         }
         stage('Tests Rest') {
-		  agent {label 'AgentCD'}
+		  agent { label 'AgentCD'}
                   steps {
-                         unstash name:'code'
+                        unstash name:'code'
                         script {
                               def stageName = env.STAGE_NAME
                               echo "Stage: ${stageName}"
@@ -88,10 +102,43 @@ pipeline {
                               }
                                script{
                                     sh'''
-                                       python -m  pytest -m category1 --junitxml=result-rest.xml test/integration/todoApiTest.py
+                                          python -m pytest --junitxml=result-rest.xml test/integration/todoApiTest.py
                                     '''
                            }
                         }
             }
+            stage('Promote') {
+                  steps{
+                        git url:"${env.GIT_REPOR_URL}", branch: 'develop', credentialsId:"{env.GIT_CREDENTIALS}"
+                script {
+                        echo "***Checkout Develop Branch***"
+                    sh 'git checkout develop'
+					sh 'git fetch origin'
+                        echo "***CheckOut Master***"
+                    sh 'git checkout master'
+                        echo "***Merge develop to master***"
+                    sh 'git merge develop || true'
+                        echo "***File to excludes***"
+                    sh 'git checkout --ours Jenkinsfile*'
+                        echo "*** Add jenkinsfile***"
+                    sh 'git add Jenkinsfile'
+                        echo "***Add files***"
+                    sh 'git add .'
+			echo"***Commit the mege***"
+		    sh 'git commit -m "Merge develop into master, excluding Jenkinsfile"'
+                        echo "***Push Master***"
+                        withCredentials([string(credentialsId:"${env.GIT_CREDENTIALS}",variable: 'GIT_TOKEN')]){
+                            sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir-CP1-D.git master'
+                        }                  
+                }
+                        
+                  }
+            }
     }
+      post {
+            always {
+                echo 'Clean env: delete dir'
+                cleanWs()
+            }
+        }
 }
