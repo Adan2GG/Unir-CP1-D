@@ -47,7 +47,7 @@ pipeline {
                     }
                 }
                 stage('Security') {
-		    agent { label 'AgentCD'}
+		    agent { label 'AgentCI'}
                     steps {
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
@@ -66,6 +66,23 @@ pipeline {
                         }
                     }
                 }
+		stage('Tests Rest') {
+		  agent { label 'AgentCD'}
+                  steps {
+                        unstash name:'code'
+                        script {
+                              def stageName = env.STAGE_NAME
+                              echo "Stage: ${stageName}"
+                              def nodeName = env.NODE_NAME
+                              echo "Agent: ${nodeName}"
+                              }
+                               script{
+                                    sh'''
+                                          python -m pytest --junitxml=result-rest.xml test/integration/todoApiTest.py
+                                    '''
+                           }
+                        }
+            }
             }
         }
         stage ('Deploy'){
@@ -90,23 +107,6 @@ pipeline {
                 }
             }
         }
-        stage('Tests Rest') {
-		  agent { label 'AgentCD'}
-                  steps {
-                        unstash name:'code'
-                        script {
-                              def stageName = env.STAGE_NAME
-                              echo "Stage: ${stageName}"
-                              def nodeName = env.NODE_NAME
-                              echo "Agent: ${nodeName}"
-                              }
-                               script{
-                                    sh'''
-                                          python -m pytest --junitxml=result-rest.xml test/integration/todoApiTest.py
-                                    '''
-                           }
-                        }
-            }
             stage('Promote') {
                   steps{
                         git url:"${env.GIT_REPOR_URL}", branch: 'develop', credentialsId:"{env.GIT_CREDENTIALS}"
