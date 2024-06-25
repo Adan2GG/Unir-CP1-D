@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'AgenteAny'}
    
      environment {
         GIT_CREDENTIALS = 'miTokenGitHub' // Reemplaza con el ID de tus credenciales en Jenkins
@@ -27,7 +27,7 @@ pipeline {
             parallel {
                 stage('Static') {
                     steps{
-						agent { label 'AgentCI'}
+			agent { label 'AgentCI'}
                         unstash name:'code'
                          script {
                               def stageName = env.STAGE_NAME
@@ -92,7 +92,7 @@ pipeline {
         }
         stage('Tests Rest') {
                   steps {
-						agent { label 'AgentCD'}
+			agent { label 'AgentCD'}
                         unstash name:'code'
                         script {
                               def stageName = env.STAGE_NAME
