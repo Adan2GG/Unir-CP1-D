@@ -10,13 +10,6 @@ pipeline {
             steps {
                git branch: 'master', url:'https://github.com/Adan2GG/unir-CP1-D.git'
                stash name:'code' , includes:'**'
-                checkout([$class: 'GitSCM',
-                          branches: [[name: "${BRANCH}"]],
-                          doGenerateSubmoduleConfigurations: false,
-                          extensions: [],
-                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
-                ])
-                stash name:'code', includes:'**'
             }
         }
         stage('Static Test') {
