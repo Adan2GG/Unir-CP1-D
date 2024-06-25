@@ -26,8 +26,8 @@ pipeline {
         stage('Static Test') {
             parallel {
                 stage('Static') {
-                    steps{
-			agent { label 'AgentCI'}
+		    agent { label 'AgentCI'}
+                    steps{	
                         unstash name:'code'
                          script {
                               def stageName = env.STAGE_NAME
@@ -47,8 +47,8 @@ pipeline {
                     }
                 }
                 stage('Security') {
+		    agent { label 'AgentCD'}
                     steps {
-		     agent { label 'AgentCD'}
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                          script {
@@ -91,8 +91,8 @@ pipeline {
             }
         }
         stage('Tests Rest') {
+		  agent { label 'AgentCD'}
                   steps {
-			agent { label 'AgentCD'}
                         unstash name:'code'
                         script {
                               def stageName = env.STAGE_NAME
@@ -111,7 +111,6 @@ pipeline {
                   steps{
                         git url:"${env.GIT_REPOR_URL}", branch: 'develop', credentialsId:"{env.GIT_CREDENTIALS}"
                 script {
-
                         echo "***Checkout Develop Branch***"
                     sh 'git checkout develop'
 					sh 'git fetch origin'
