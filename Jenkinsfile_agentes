@@ -1,5 +1,5 @@
 pipeline {   
-    agent any
+    agent { label 'AgenteAny'}
      environment {
         GIT_REPOR_URL = 'https://github.com/Adan2GG/unir-CP1-D.git' // Reemplaza con la URL de tu repositorio
         STACK_NAME = 'todo-list-aws-production'     // Cambia esto al nombre de tu stack SAM
@@ -22,8 +22,8 @@ pipeline {
         stage('Static Test') {
             parallel {
                 stage('Static') {
+		    agent { label 'AgentCI'}
                     steps{
-			agent { label 'AgentCI'}
                         unstash name:'code'
                          script {
                               def stageName = env.STAGE_NAME
@@ -43,8 +43,8 @@ pipeline {
                     }
                 }
                 stage('Security') {
+		    agent { label 'AgentCI'}
                     steps {
-		     agent { label 'AgentCI'}
                      unstash name:'code'
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                          script {
@@ -84,8 +84,8 @@ pipeline {
             }
         }
         stage('Tests Rest') {
+		  agent {label 'AgentCD'}
                   steps {
-                        agent {label 'AgentCD'}
                          unstash name:'code'
                         script {
                               def stageName = env.STAGE_NAME
