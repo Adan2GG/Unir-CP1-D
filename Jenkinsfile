@@ -93,34 +93,19 @@ pipeline {
             }
             stage('Promote') {
                   steps{
-			  script {
+		  	script {
 				echo "***Checkout Multi Branch Credentials***"
 			}
-                        checkout([$class: 'GitSCM',
-                          branches: [[name: "*/*"]],
-                          doGenerateSubmoduleConfigurations: false,
-                          extensions: [],
-                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
-                ])
-                script {
-                        echo "***Merge develop to master***"
-                    sh 'git merge develop || true'
-                        echo "***File to excludes***"
-                    sh 'git checkout --ours Jenkinsfile'
-                        echo "*** Add jenkinsfile***"
-                    sh 'git add Jenkinsfile'
-                        echo "***Add files***"
-                    sh 'git add .'
-                  	echo"***Commit the mege***"
-	            sh 'git commit -m "Merge develop into master, excluding Jnekinsfile"'
-                        echo "***Push Master***"
-                        withCredentials([string(credentialsId:"${env.GIT_CREDENTIALS}",variable: 'GIT_TOKEN')]){
-                            sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir-CP1-D.git master'
-                        }                  
-                }
+			// Checkout la rama develop
+                	git credentialsId: "${GIT_CREDENTIALS}", url: "${GIT_REPOR_URL}", branch: 'develop'
+                	// Excluir los archivos Jenkinsfile y Jenkinsfile_agentes del merge
+                	sh 'git merge -s ours --no-commit master -X theirs -X exclude=Jenkinsfile*'
+	                // Commit el merge
+        	        sh 'git commit -m "Merge develop to master"'
+	                // Push el cambio a la rama master
+        	        sh 'git push origin master'
                         
-                  }
-            }
+            	}
     }
       post {
             always {
