@@ -93,20 +93,11 @@ pipeline {
             }
             stage('Promote') {
                   steps{
-			script {
-				echo "***Checkout Develop Branch Credentials***"
-			}
-                        checkout([$class: 'GitSCM',
-                          branches: [[name: "${BRANCH}"]],
-                          doGenerateSubmoduleConfigurations: false,
-                          extensions: [],
-                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
-                        ])
 			  script {
-				echo "***Checkout Master Branch Credentials***"
+				echo "***Checkout Multi Branch Credentials***"
 			}
                         checkout([$class: 'GitSCM',
-                          branches: [[name: "*/master"]],
+                          branches: [[name: "*/*"]],
                           doGenerateSubmoduleConfigurations: false,
                           extensions: [],
                           userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
