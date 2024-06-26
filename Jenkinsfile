@@ -93,7 +93,7 @@ pipeline {
             }
             stage('Promote') {
                   steps{
-		  	script {
+			script {
 				echo "***Checkout Multi Branch Credentials***"
 			}
 			// Checkout la rama develop
@@ -105,7 +105,8 @@ pipeline {
 	                // Push el cambio a la rama master
         	        sh 'git push origin master'
                         
-            	}
+            		}
+		}
     }
       post {
             always {
