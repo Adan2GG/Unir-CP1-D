@@ -14,13 +14,15 @@ pipeline {
      stages {
         stage('Get Code') {
             steps {
-                checkout([$class: 'GitSCM',
+                 checkout([$class: 'GitSCM',
                           branches: [[name: "${BRANCH}"]],
                           doGenerateSubmoduleConfigurations: false,
                           extensions: [],
                           userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
                 ])
                 stash name:'code', includes:'**'
+                git branch: 'staging', url:'https://github.com/Adan2GG/todo-list-aws-config.git'
+                stash name:'code2' , includes:'**'
             }
         }
         stage('Static Test') {
@@ -56,8 +58,9 @@ pipeline {
         }
         stage ('Deploy'){
             steps{
+                 unstash name:'code2'
                 sh 'sam build'
-                sh 'sam deploy --no-fail-on-empty-changeset || true --config-file samconfig.toml --config-env staging'
+                sh 'sam deploy --config-file samconfig.toml  --config-env staging --no-fail-on-empty-changeset || true '
                 //Obtenemos las urls del servicio desplegado en con sam
                 script {
                     def stackInfo = sh(script: "aws cloudformation describe-stacks --stack-name ${STACK_NAME}", returnStdout: true).trim()
@@ -90,12 +93,22 @@ pipeline {
             }
             stage('Promote') {
                   steps{
-                        git url:"${env.GIT_REPOR_URL}", branch: 'develop', credentialsId:"{env.GIT_CREDENTIALS}"
+                        checkout([$class: 'GitSCM',
+                          branches: [[name: "${BRANCH}"]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [],
+                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
+                        ])
+                        checkout([$class: 'GitSCM',
+                          branches: [[name: "*/master"]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [],
+                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
+                ])
                 script {
-
                         echo "***Checkout Develop Branch***"
                     sh 'git checkout develop'
-					sh 'git fetch origin'
+                        sh 'git fetch origin'
                         echo "***CheckOut Master***"
                     sh 'git checkout master'
                         echo "***Merge develop to master***"
@@ -106,8 +119,8 @@ pipeline {
                     sh 'git add Jenkinsfile'
                         echo "***Add files***"
                     sh 'git add .'
-						echo"***Commit the mege***"
-					sh 'git commit -m "Merge develop into master, excluding Jnekinsfile"'
+                  	echo"***Commit the mege***"
+	            sh 'git commit -m "Merge develop into master, excluding Jnekinsfile"'
                         echo "***Push Master***"
                         withCredentials([string(credentialsId:"${env.GIT_CREDENTIALS}",variable: 'GIT_TOKEN')]){
                             sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir-CP1-D.git master'
