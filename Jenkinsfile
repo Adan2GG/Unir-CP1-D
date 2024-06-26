@@ -93,14 +93,24 @@ pipeline {
             }
             stage('Promote') {
                   steps{
-                        git url:"${env.GIT_REPOR_URL}", branch: 'develop', credentialsId:"{env.GIT_CREDENTIALS}"
+                        checkout([$class: 'GitSCM',
+                          branches: [[name: "${BRANCH}"]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [],
+                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
+                        ])
+                        checkout([$class: 'GitSCM',
+                          branches: [[name: "*/master"]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [],
+                          userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
+                ])
                 script {
-
                         echo "***Checkout Develop Branch***"
-                    sh 'git checkout branch:"develop", url:"https://github.com/Adan2GG/unir-CP1-D.git"'
-		    sh 'git fetch origin'
+                    sh 'git checkout develop'
+                        sh 'git fetch origin'
                         echo "***CheckOut Master***"
-                    sh 'git checkout  branch:"master", url:"https://github.com/Adan2GG/unir-CP1-D.git"'
+                    sh 'git checkout master'
                         echo "***Merge develop to master***"
                     sh 'git merge develop || true'
                         echo "***File to excludes***"
@@ -109,8 +119,8 @@ pipeline {
                     sh 'git add Jenkinsfile'
                         echo "***Add files***"
                     sh 'git add .'
-						echo"***Commit the mege***"
-					sh 'git commit -m "Merge develop into master, excluding Jnekinsfile"'
+                  	echo"***Commit the mege***"
+	            sh 'git commit -m "Merge develop into master, excluding Jnekinsfile"'
                         echo "***Push Master***"
                         withCredentials([string(credentialsId:"${env.GIT_CREDENTIALS}",variable: 'GIT_TOKEN')]){
                             sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir-CP1-D.git master'
