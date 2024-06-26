@@ -93,12 +93,18 @@ pipeline {
             }
             stage('Promote') {
                   steps{
+			script {
+				echo "***Checkout develop Branch***"
+			}
                         checkout([$class: 'GitSCM',
                           branches: [[name: "${BRANCH}"]],
                           doGenerateSubmoduleConfigurations: false,
                           extensions: [],
                           userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
                         ])
+			  script {
+				echo "***Checkout master Branch***"
+			}
                         checkout([$class: 'GitSCM',
                           branches: [[name: "*/master"]],
                           doGenerateSubmoduleConfigurations: false,
@@ -106,12 +112,6 @@ pipeline {
                           userRemoteConfigs: [[url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"]]
                 ])
                 script {
-                        echo "***Checkout Develop Branch***"
-                    sh 'git checkout develop'
-                        sh 'git fetch origin'
-                        echo "***CheckOut Master***"
-                    sh 'git checkout master'
-                        echo "***Merge develop to master***"
                     sh 'git merge develop || true'
                         echo "***File to excludes***"
                     sh 'git checkout --ours Jenkinsfile'
