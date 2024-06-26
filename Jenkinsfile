@@ -97,10 +97,10 @@ pipeline {
                 script {
 
                         echo "***Checkout Develop Branch***"
-                    sh 'git checkout develop'
-					sh 'git fetch origin'
+                    sh 'git checkout branch:"develop", url:"https://github.com/Adan2GG/unir-CP1-D.git"'
+		    sh 'git fetch origin'
                         echo "***CheckOut Master***"
-                    sh 'git checkout master'
+                    sh 'git checkout  branch:"master", url:"https://github.com/Adan2GG/unir-CP1-D.git"'
                         echo "***Merge develop to master***"
                     sh 'git merge develop || true'
                         echo "***File to excludes***"
