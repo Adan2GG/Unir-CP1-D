@@ -93,20 +93,26 @@ pipeline {
             }
             stage('Promote') {
                   steps{
-			script {
-				echo "***Checkout Multi Branch Credentials***"
-			}
-			// Checkout la rama develop
-                	git credentialsId: "${GIT_CREDENTIALS}", url: "${GIT_REPOR_URL}", branch: 'develop'
+					script {
+						echo "***Checkout Multi Branch Credentials***"
+					}
+					// Clonar el repositorio
+                	git branch: 'develop', url: "${GIT_REPOR_URL}", credentialsId: "${GIT_CREDENTIALS}"
+                	//Checkout de master
+                	sh 'git checkout master'
+                	//git merge de ka rama develop
+                	sh 'git merge -X ours origin/develop'
                 	// Excluir los archivos Jenkinsfile y Jenkinsfile_agentes del merge
-                	sh 'git merge -s ours --no-commit master -X theirs -X exclude=Jenkinsfile*'
-	                // Commit el merge
-        	        sh 'git commit -m "Merge develop to master"'
-	                // Push el cambio a la rama master
-        	        sh 'git push origin master'
+                	sh 'git checkout HEAD Jenkinsfile*'
+                	//Verificar status
+                	sh 'git status'
+	                //Push de los ambios a la rama master
+	                witchCredentials([string(credentialsId:"${env.GIT_CREDENTIALS}",variable:'GIT_TOKEN')]){
+	                    sh 'git push https://${GIT_TOKEN}@github.com/Adan2GG/unir_CP1-D.git master'
+	                }
                         
-            		}
-		}
+            	}
+			}
     }
       post {
             always {
